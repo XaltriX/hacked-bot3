@@ -1,31 +1,38 @@
 import asyncio
-from aiogram import Bot, Dispatcher, types
-from aiogram.filters import Command
-from aiogram.exceptions import TelegramAPIError, TelegramConflictError
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 import os
-import psutil
 import re
 from pathlib import Path
 import logging
+import psutil
+
+from motor.motor_asyncio import AsyncIOMotorClient
+from aiogram import Bot, Dispatcher, types
+from aiogram.filters import Command
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
+from aiogram.exceptions import TelegramAPIError, TelegramConflictError
 
 # --- Logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# --- Constants
-TOKEN_FILES = ["token1.txt"]
-USER_IDS_FILE = "user_ids.txt"
-REMAINING_TOKENS_FILE = "remaining_tokens.txt"
-CONFIG_FILE = "bot_config.txt"
+# --- MongoDB Setup (CHANGE YOUR DATABASE NAME HERE)
+MONGO_URL = "mongodb+srv://Hemanthxforyou:9550399779htr@cluster0.e50ndwr.mongodb.net/?retryWrites=true&w=majority"
+DB_NAME = "telegram_multibot_manager3"  # Change DB name if you like
+mongo_client = AsyncIOMotorClient(MONGO_URL)
+db = mongo_client[DB_NAME]
+
+# --- Constants (replace with your real tokens!)
+TOKEN_FILES = ["token1.txt"]  # Text files not used with MongoDB, but can be left for fallback
 ADMIN_ID = 5706788169
-DASHBOARD_TOKEN = "7557269432:AAF1scybLhu5sX4E6xkktd5jGXtCFzOz1n0"
+DASHBOARD_TOKEN = "8171882534:AAEpsRixiurqy7NP_jFVJ5r0IjW9fyRrUnw"
 BATCH_SIZE = 50
 DELAY_BETWEEN_BATCHES = 10
 MAX_RETRIES = 3
 RETRY_DELAY = 2
 BOTS_PER_PAGE = 50
-MAX_BOTS_LIMIT = 100  # Heroku-friendly default
+
+# Mongo-persisted defaults
+MAX_BOTS_LIMIT = 100
 
 CUSTOM_REPLY_TEXT = """
 🎬 MOVIE & ENTERTAINMENT HUB 🍿  
@@ -53,49 +60,58 @@ CUSTOM_REPLY_BUTTONS = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text="🌐 Full Hub Access", url="https://linkzwallah.netlify.app/")]
 ])
 
-user_ids = set()
-bots = {}
-bot_stats = {}
-bot_tasks = {}
+user_ids = set()             # user_id (int)
+bots = {}                    # username -> Bot instance
+bot_stats = {}               # username -> {'messages': int, 'users': set}
+bot_tasks = {}               # username -> asyncio.Task
 broadcast_cancelled = False
+
+
+# --- MongoDB Helpers ---
+async def mongo_save_token(token, deployed=True):
+    await db.tokens.update_one({"token": token}, {"$set": {"token": token, "deployed": deployed}}, upsert=True)
+
+async def mongo_get_all_tokens(deployed_only=True):
+    cursor = db.tokens.find({"deployed": True} if deployed_only else {})
+    return [doc["token"] async for doc in cursor]
+
+async def mongo_remove_token(token):
+    await db.tokens.delete_one({"token": token})
+
+async def mongo_save_user_id(user_id):
+    await db.user_ids.update_one({"user_id": user_id}, {"$set": {"user_id": user_id}}, upsert=True)
+
+async def mongo_get_all_user_ids():
+    cursor = db.user_ids.find({})
+    return [doc["user_id"] async for doc in cursor]
+
+async def mongo_save_bot_stat(username, messages, users):
+    await db.bot_stats.update_one(
+        {"username": username},
+        {"$set": {"username": username, "messages": messages, "users": list(users)}},
+        upsert=True
+    )
+
+async def mongo_get_all_bot_stats():
+    stats = {}
+    async for doc in db.bot_stats.find({}):
+        stats[doc["username"]] = {"messages": doc["messages"], "users": set(doc.get("users", []))}
+    return stats
+
+async def mongo_save_config(limit):
+    await db.config.update_one({"_id": "config"}, {"$set": {"max_bots_limit": limit}}, upsert=True)
+
+async def mongo_get_config():
+    doc = await db.config.find_one({"_id": "config"})
+    if doc and "max_bots_limit" in doc:
+        return doc["max_bots_limit"]
+    return 100
+
 
 def extract_tokens(text):
     pattern = r'\d{6,10}:[A-Za-z0-9_-]{20,}'
     return re.findall(pattern, text)
 
-def load_config():
-    global MAX_BOTS_LIMIT
-    try:
-        if Path(CONFIG_FILE).exists():
-            with open(CONFIG_FILE, "r") as f:
-                content = f.read().strip()
-                if content.isdigit():
-                    MAX_BOTS_LIMIT = int(content)
-                    logger.info(f"Loaded bot limit: {MAX_BOTS_LIMIT}")
-    except Exception as e:
-        logger.error(f"Error loading config: {e}")
-        MAX_BOTS_LIMIT = 100
-
-def save_config():
-    try:
-        with open(CONFIG_FILE, "w") as f:
-            f.write(str(MAX_BOTS_LIMIT))
-        logger.info(f"Saved bot limit: {MAX_BOTS_LIMIT}")
-    except Exception as e:
-        logger.error(f"Error saving config: {e}")
-
-def save_remaining_tokens(tokens):
-    try:
-        if tokens:
-            with open(REMAINING_TOKENS_FILE, "w", encoding="utf-8") as f:
-                for token in tokens:
-                    f.write(f"{token}\n")
-            logger.info(f"Saved {len(tokens)} remaining tokens to {REMAINING_TOKENS_FILE}")
-            return True
-        return False
-    except Exception as e:
-        logger.error(f"Error saving remaining tokens: {e}")
-        return False
 
 def get_vps_capacity():
     try:
@@ -119,195 +135,6 @@ def get_vps_capacity():
         logger.error(f"Error calculating capacity: {e}")
         return None
 
-def load_user_ids():
-    try:
-        if Path(USER_IDS_FILE).exists():
-            with open(USER_IDS_FILE, "r") as f:
-                for line in f:
-                    chat_id = line.strip()
-                    if chat_id.isdigit():
-                        user_ids.add(int(chat_id))
-        logger.info(f"Loaded {len(user_ids)} user IDs")
-    except Exception as e:
-        logger.error(f"Error loading user IDs: {e}")
-
-def save_user_id(chat_id):
-    try:
-        if chat_id not in user_ids:
-            user_ids.add(chat_id)
-            with open(USER_IDS_FILE, "a") as f:
-                f.write(f"{chat_id}\n")
-    except Exception as e:
-        logger.error(f"Error saving user ID {chat_id}: {e}")
-
-async def delete_webhook(token):
-    bot = None
-    try:
-        bot = Bot(token)
-        await bot.delete_webhook(drop_pending_updates=True)
-    except TelegramConflictError:
-        logger.warning(f"Webhook conflict for token {token[:10]}...")
-        try:
-            await asyncio.sleep(2)
-            if bot:
-                await bot.delete_webhook(drop_pending_updates=True)
-        except Exception as e:
-            logger.error(f"Error deleting webhook: {e}")
-    except Exception as e:
-        logger.error(f"Error deleting webhook: {e}")
-    finally:
-        if bot:
-            try:
-                await bot.session.close()
-            except Exception:
-                pass
-
-async def get_bot_username(token):
-    for attempt in range(MAX_RETRIES):
-        bot = None
-        try:
-            bot = Bot(token)
-            me = await bot.get_me()
-            return me.username
-        except TelegramConflictError:
-            logger.warning(f"Conflict error getting bot info (attempt {attempt+1}/{MAX_RETRIES})")
-            await asyncio.sleep(RETRY_DELAY)
-        except Exception as e:
-            logger.error(f"Error getting bot username: {e}")
-            return None
-        finally:
-            if bot:
-                try:
-                    await bot.session.close()
-                except Exception:
-                    pass
-    return None
-
-async def startup_bots(tokens, dashboard_bot=None, notify_chat_id=None):
-    global MAX_BOTS_LIMIT
-    current_bots = len(bots)
-    available_slots = MAX_BOTS_LIMIT - current_bots
-    if available_slots <= 0:
-        logger.warning(f"Bot limit reached! Current: {current_bots}/{MAX_BOTS_LIMIT}")
-        if dashboard_bot and notify_chat_id:
-            await dashboard_bot.send_message(
-                notify_chat_id,
-                f"⚠️ BOT LIMIT REACHED!\n"
-                f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                f"Current Bots: {current_bots}\n"
-                f"Max Limit: {MAX_BOTS_LIMIT}\n\n"
-                f"❌ Cannot deploy more bots!\n"
-                f"Use /setlimit to increase limit."
-            )
-        return 0
-    tokens_to_deploy = tokens[:available_slots]
-    remaining_tokens = tokens[available_slots:]
-    if remaining_tokens:
-        logger.info(f"Limiting to {len(tokens_to_deploy)} tokens. {len(remaining_tokens)} tokens remaining.")
-        saved = save_remaining_tokens(remaining_tokens)
-        if dashboard_bot and notify_chat_id and saved:
-            await dashboard_bot.send_document(
-                notify_chat_id,
-                types.FSInputFile(REMAINING_TOKENS_FILE),
-                caption=(
-                    f"⚠️ BOT LIMIT WARNING\n"
-                    f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                    f"🔢 Total Tokens: {len(tokens)}\n"
-                    f"✅ Deploying: {len(tokens_to_deploy)}\n"
-                    f"📋 Remaining: {len(remaining_tokens)}\n\n"
-                    f"⚡ Current: {current_bots}/{MAX_BOTS_LIMIT}\n"
-                    f"🎯 After Deployment: {current_bots + len(tokens_to_deploy)}/{MAX_BOTS_LIMIT}\n\n"
-                    f"📎 Attached: Remaining tokens that couldn't be deployed\n"
-                    f"💡 Use /setlimit to increase capacity"
-                )
-            )
-    started = 0
-    failed = 0
-    total = len(tokens_to_deploy)
-    logger.info(f"Starting {total} bots in batches of {BATCH_SIZE}")
-    batch_num = 1
-    for i in range(0, total, BATCH_SIZE):
-        batch = tokens_to_deploy[i:i+BATCH_SIZE]
-        logger.info(f"Starting batch {batch_num}/{(total+BATCH_SIZE-1)//BATCH_SIZE}...")
-        tasks = [start_single_bot(token) for token in batch]
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-        for result in results:
-            if result is True:
-                started += 1
-            else:
-                failed += 1
-        logger.info(f"[{started}/{total}] bots started, {failed} failed. Sleeping {DELAY_BETWEEN_BATCHES}s...")
-        print_resource_usage()
-        batch_num += 1
-        await asyncio.sleep(DELAY_BETWEEN_BATCHES)
-    logger.info(f"Bot startup complete: {started} successful, {failed} failed")
-    return started
-
-async def start_single_bot(token):
-    try:
-        if len(bots) >= MAX_BOTS_LIMIT:
-            logger.warning(f"Bot limit reached: {len(bots)}/{MAX_BOTS_LIMIT}")
-            return False
-        await delete_webhook(token)
-        await asyncio.sleep(1)
-        username = await get_bot_username(token)
-        if not username:
-            logger.error(f"Token invalid or unreachable: {token[:10]}...")
-            return False
-        if username in bots:
-            logger.warning(f"Already running: @{username}")
-            return False
-        bot = Bot(token)
-        dp = Dispatcher()
-        bots[username] = bot
-        bot_stats[username] = {"messages": 0, "users": set()}
-        @dp.message()
-        async def handler(msg: types.Message):
-            try:
-                bot_stats[username]["messages"] += 1
-                bot_stats[username]["users"].add(msg.from_user.id)
-                save_user_id(msg.from_user.id)
-                # --- FIXED: Button reply!
-                await msg.answer(CUSTOM_REPLY_TEXT, reply_markup=CUSTOM_REPLY_BUTTONS)
-            except Exception as e:
-                logger.error(f"Error handling message for @{username}: {e}")
-        async def poll_with_error_handling():
-            try:
-                await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
-            except Exception as e:
-                logger.error(f"Error polling @{username}: {e}")
-            finally:
-                try:
-                    await bot.session.close()
-                except Exception:
-                    pass
-        task = asyncio.create_task(poll_with_error_handling())
-        bot_tasks[username] = task
-        logger.info(f"@{username}: OK")
-        return True
-    except Exception as e:
-        logger.error(f"Critical error starting bot: {e}")
-        return False
-
-def load_all_tokens():
-    all_tokens = []
-    try:
-        for token_file in TOKEN_FILES:
-            if not Path(token_file).exists():
-                continue
-            try:
-                with open(token_file, "r", encoding="utf-8") as f:
-                    content = f.read()
-                    tokens = extract_tokens(content)
-                    all_tokens.extend(tokens)
-                    logger.info(f"Loaded {len(tokens)} tokens from {token_file}")
-            except Exception as e:
-                logger.error(f"Error reading {token_file}: {e}")
-        logger.info(f"Total tokens loaded: {len(all_tokens)}")
-        return all_tokens
-    except Exception as e:
-        logger.error(f"Error loading tokens: {e}")
-        return []
 
 def print_resource_usage():
     try:
@@ -321,6 +148,7 @@ def print_resource_usage():
     except Exception as e:
         logger.error(f"Error getting resource usage: {e}")
 
+
 def get_resource_usage_str():
     try:
         cpu = psutil.cpu_percent(interval=1)
@@ -332,6 +160,7 @@ def get_resource_usage_str():
             return f"CPU: {cpu}% | RAM: {ram}%"
     except Exception as e:
         return "Resource usage unavailable"
+
 
 def get_bot_list_page(page=0):
     try:
@@ -363,6 +192,7 @@ def get_bot_list_page(page=0):
         logger.error(f"Error getting bot list: {e}")
         return "Error getting bot list", None
 
+
 def get_stats():
     try:
         total_users = len(user_ids)
@@ -380,6 +210,149 @@ def get_stats():
     except Exception as e:
         logger.error(f"Error getting stats: {e}")
         return "Stats unavailable"
+
+
+async def delete_webhook(token):
+    bot = None
+    try:
+        bot = Bot(token)
+        await bot.delete_webhook(drop_pending_updates=True)
+    except TelegramConflictError:
+        logger.warning(f"Webhook conflict for token {token[:10]}...")
+        try:
+            await asyncio.sleep(2)
+            if bot:
+                await bot.delete_webhook(drop_pending_updates=True)
+        except Exception as e:
+            logger.error(f"Error deleting webhook: {e}")
+    except Exception as e:
+        logger.error(f"Error deleting webhook: {e}")
+    finally:
+        if bot:
+            try:
+                await bot.session.close()
+            except Exception:
+                pass
+
+
+async def get_bot_username(token):
+    for attempt in range(MAX_RETRIES):
+        bot = None
+        try:
+            bot = Bot(token)
+            me = await bot.get_me()
+            return me.username
+        except TelegramConflictError:
+            logger.warning(f"Conflict error getting bot info (attempt {attempt+1}/{MAX_RETRIES})")
+            await asyncio.sleep(RETRY_DELAY)
+        except Exception as e:
+            logger.error(f"Error getting bot username: {e}")
+            return None
+        finally:
+            if bot:
+                try:
+                    await bot.session.close()
+                except Exception:
+                    pass
+    return None
+
+
+async def startup_bots(tokens, dashboard_bot=None, notify_chat_id=None):
+    global MAX_BOTS_LIMIT
+    current_bots = len(bots)
+    available_slots = MAX_BOTS_LIMIT - current_bots
+    if available_slots <= 0:
+        logger.warning(f"Bot limit reached! Current: {current_bots}/{MAX_BOTS_LIMIT}")
+        if dashboard_bot and notify_chat_id:
+            await dashboard_bot.send_message(
+                notify_chat_id,
+                f"⚠️ BOT LIMIT REACHED!\n"
+                f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                f"Current Bots: {current_bots}\n"
+                f"Max Limit: {MAX_BOTS_LIMIT}\n\n"
+                f"❌ Cannot deploy more bots!\n"
+                f"Use /setlimit to increase limit."
+            )
+        return 0
+    tokens_to_deploy = tokens[:available_slots]
+    remaining_tokens = tokens[available_slots:]
+    # Save undeployed tokens in MongoDB
+    for token in remaining_tokens:
+        await mongo_save_token(token, deployed=False)
+    started = 0
+    failed = 0
+    total = len(tokens_to_deploy)
+    logger.info(f"Starting {total} bots in batches of {BATCH_SIZE}")
+    batch_num = 1
+    for i in range(0, total, BATCH_SIZE):
+        batch = tokens_to_deploy[i:i+BATCH_SIZE]
+        logger.info(f"Starting batch {batch_num}/{(total+BATCH_SIZE-1)//BATCH_SIZE}...")
+        tasks = [start_single_bot(token) for token in batch]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        for token, result in zip(batch, results):
+            if result is True:
+                started += 1
+                await mongo_save_token(token, deployed=True)
+            else:
+                failed += 1
+                await mongo_save_token(token, deployed=False)
+        logger.info(f"[{started}/{total}] bots started, {failed} failed. Sleeping {DELAY_BETWEEN_BATCHES}s...")
+        print_resource_usage()
+        batch_num += 1
+        await asyncio.sleep(DELAY_BETWEEN_BATCHES)
+    logger.info(f"Bot startup complete: {started} successful, {failed} failed")
+    return started
+
+
+async def start_single_bot(token):
+    try:
+        if len(bots) >= MAX_BOTS_LIMIT:
+            logger.warning(f"Bot limit reached: {len(bots)}/{MAX_BOTS_LIMIT}")
+            return False
+        await delete_webhook(token)
+        await asyncio.sleep(1)
+        username = await get_bot_username(token)
+        if not username:
+            logger.error(f"Token invalid or unreachable: {token[:10]}...")
+            return False
+        if username in bots:
+            logger.warning(f"Already running: @{username}")
+            return False
+        bot = Bot(token)
+        dp = Dispatcher()
+        bots[username] = bot
+        stat_doc = bot_stats.setdefault(username, {"messages": 0, "users": set()})
+
+        @dp.message()
+        async def handler(msg: types.Message):
+            try:
+                stat_doc["messages"] += 1
+                stat_doc["users"].add(msg.from_user.id)
+                user_ids.add(msg.from_user.id)
+                await mongo_save_user_id(msg.from_user.id)
+                await mongo_save_bot_stat(username, stat_doc["messages"], stat_doc["users"])
+                await msg.answer(CUSTOM_REPLY_TEXT, reply_markup=CUSTOM_REPLY_BUTTONS)
+            except Exception as e:
+                logger.error(f"Error handling message for @{username}: {e}")
+
+        async def poll_with_error_handling():
+            try:
+                await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
+            except Exception as e:
+                logger.error(f"Error polling @{username}: {e}")
+            finally:
+                try:
+                    await bot.session.close()
+                except Exception:
+                    pass
+        task = asyncio.create_task(poll_with_error_handling())
+        bot_tasks[username] = task
+        logger.info(f"@{username}: OK")
+        return True
+    except Exception as e:
+        logger.error(f"Critical error starting bot: {e}")
+        return False
+
 
 async def dashboard():
     dashboard_bot = None
@@ -402,7 +375,7 @@ async def dashboard():
                 "/capacity - Check VPS/Heroku capacity\n"
                 "/setlimit <number> - Set bot limit\n"
                 "/gettoken @botname - Get bot token\n"
-                "/broadcast <msg> - Broadcast to all users\n"
+                "/broadcast <msg> or reply a message with /broadcast to broadcast\n"
                 "\n📤 Send a .txt file to upload tokens."
             )
 
@@ -491,7 +464,7 @@ async def dashboard():
                 return
             old_limit = MAX_BOTS_LIMIT
             MAX_BOTS_LIMIT = new_limit
-            save_config()
+            await mongo_save_config(MAX_BOTS_LIMIT)
             capacity = get_vps_capacity()
             warning = ""
             if capacity and new_limit > capacity['estimated_capacity']:
@@ -554,35 +527,21 @@ async def dashboard():
                 return
             bot_username = args[1].strip().lstrip('@')
             found_token = None
-            found_in_file = None
-            for token_file in TOKEN_FILES:
-                if not Path(token_file).exists():
-                    continue
+            async for doc in db.tokens.find({}):
                 try:
-                    with open(token_file, "r", encoding="utf-8") as f:
-                        content = f.read()
-                        tokens = extract_tokens(content)
-                        for token in tokens:
-                            bot_instance = None
-                            try:
-                                bot_instance = Bot(token)
-                                me = await bot_instance.get_me()
-                                if me.username.lower() == bot_username.lower():
-                                    found_token = token
-                                    found_in_file = token_file
-                                    break
-                            except Exception:
-                                pass
-                            finally:
-                                if bot_instance:
-                                    try:
-                                        await bot_instance.session.close()
-                                    except Exception:
-                                        pass
-                        if found_token:
-                            break
-                except Exception as e:
-                    logger.error(f"Error reading {token_file}: {e}")
+                    bot_instance = Bot(doc["token"])
+                    me = await bot_instance.get_me()
+                    if me.username.lower() == bot_username.lower():
+                        found_token = doc["token"]
+                        break
+                except Exception:
+                    pass
+                finally:
+                    if bot_instance:
+                        try:
+                            await bot_instance.session.close()
+                        except Exception:
+                            pass
             if found_token:
                 user_count = len(bot_stats.get(bot_username, {}).get("users", set()))
                 msg_count = bot_stats.get(bot_username, {}).get("messages", 0)
@@ -590,7 +549,6 @@ async def dashboard():
                     f"🔐 BOT TOKEN FOUND\n"
                     f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
                     f"🤖 Bot: @{bot_username}\n"
-                    f"📁 File: {found_in_file}\n"
                     f"👥 Users: {user_count}\n"
                     f"📨 Messages: {msg_count}\n\n"
                     f"🔑 Token:\n`{found_token}`"
@@ -621,17 +579,33 @@ async def dashboard():
                 callback.message.text + "\n\n🛑 CANCELLATION REQUESTED..."
             )
 
+        # --- Broadcast can be done by /broadcast or as a reply
         @dp.message(Command("broadcast"))
         async def cmd_broadcast(msg: types.Message):
             global broadcast_cancelled
             if msg.from_user.id != ADMIN_ID:
                 await msg.answer("Unauthorized.")
                 return
-            txt = msg.text.split(None, 1)
-            if len(txt) < 2:
-                await msg.answer("Usage: /broadcast <message>")
+
+            message_text = None
+            # Broadcast the reply if replying
+            if msg.reply_to_message:
+                if msg.reply_to_message.text:
+                    message_text = msg.reply_to_message.text
+                elif msg.reply_to_message.caption:
+                    message_text = msg.reply_to_message.caption
+                # For media, you can send msg.reply_to_message.photo/file etc. if needed
+            else:
+                txt = msg.text.split(None, 1)
+                if len(txt) < 2:
+                    await msg.answer("Usage: /broadcast <message> or reply to a message with /broadcast")
+                    return
+                message_text = txt[1]
+
+            if not message_text:
+                await msg.answer("❌ No message content to broadcast!")
                 return
-            message = txt[1]
+
             if not bots:
                 await msg.answer("❌ No bots available for broadcast!")
                 return
@@ -672,7 +646,7 @@ async def dashboard():
                     if broadcast_cancelled:
                         break
                     try:
-                        await bot_instance.send_message(uid, message)
+                        await bot_instance.send_message(uid, message_text)
                         successful += 1
                         total_successful += 1
                     except Exception as e:
@@ -789,11 +763,15 @@ async def dashboard():
             except Exception:
                 pass
 
+
 async def main():
+    global MAX_BOTS_LIMIT, user_ids, bot_stats
     try:
-        load_config()
-        load_user_ids()
-        all_tokens = load_all_tokens()
+        # Load state from MongoDB on start
+        MAX_BOTS_LIMIT = await mongo_get_config()
+        user_ids.update(await mongo_get_all_user_ids())
+        bot_stats.update(await mongo_get_all_bot_stats())
+        all_tokens = await mongo_get_all_tokens()
         if not all_tokens:
             logger.warning("No tokens found!")
         asyncio.create_task(dashboard())
@@ -802,6 +780,7 @@ async def main():
             await asyncio.sleep(3600)
     except Exception as e:
         logger.error(f"Main error: {e}")
+
 
 if __name__ == "__main__":
     try:
