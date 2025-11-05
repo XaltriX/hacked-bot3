@@ -16,7 +16,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # --- MongoDB Setup (CHANGE YOUR DATABASE NAME HERE)
-MONGO_URL = "mongodb+srv://Hemanthxforyou:9550399779htr@cluster0.e50ndwr.mongodb.net/?retryWrites=true&w=majority"
+MONGO_URL = "mongodb+srv://filesharexbot:uPhC7m78IkR34Wnl@cluster0.pfxnz8t.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 DB_NAME = "telegram_multibot_manager3"  # Change DB name if you like
 mongo_client = AsyncIOMotorClient(MONGO_URL)
 db = mongo_client[DB_NAME]
