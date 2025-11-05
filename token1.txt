@@ -1,0 +1,26 @@
+Bot token: 7286009662:AAEBooZev-M7Ib2mJD-vJtMYKvmclJlNy0k, Name: Autofiletr, Username: sarah_cling_bot, File: info.py
+Bot token: 7518791498:AAFq982ctHMk71aFjRHyQBkQ-tZ-SOGS_dw, Name: PSO - AUTO BOT, Username: Pso_AutoBot, File: info.py
+Bot token: 7307918604:AAGTMfRS7pPz683MWUwJLa3qdDp0M_Lnang, Name: @testbotmovies, Username: testbotmovies_bot, File: info.py
+Bot token: 7140621895:AAGSU5RThJQxRGPPYxxb9lXicGYOqMaei5w, Name: the rog, Username: rogworldbot, File: info.py
+Bot token: 6549227192:AAFKXtWe9l4r6Zlyhinnq4No2NwQoAfQ6Co, Name: ᴋɪᴄᴄʜᴀ ꜱᴜᴅᴇᴇᴘ, Username: KCS_AutoFilter_bot, File: info.py
+Bot token: 7271751540:AAG1z9SHMC1Xv6ZF6slmI0DGDmcSjh8XrQk, Name: Mahesh, Username: ssmb2bot, File: info.py
+Bot token: 7479470521:AAGG7ejqOr4Jv-zGo1jCVHfCURasJv9_F2w, Name: OTT Movies, Username: kfcinemasott_bot, File: info.py
+Bot token: 7071481742:AAGdDcMoDrX12DyZUpF6Ts1aMi5XVD1z9XU, Name: UHD Tamil bot 🌺, Username: UHD_Filter_bot, File: info.py
+Bot token: 7279822237:AAGs37iCDOe52rQ3wUw8IafvEJgiD7kUs4k, Name: ᴍᴏᴠɪᴇꜱ ʀᴇqᴜᴇꜱᴛꜱ ❤️‍🔥, Username: Freemovies001bot, File: info.py
+Bot token: 7485008436:AAHs-VoLwNZZB0z4_EtXollVnUSfBAHajeM, Name: सब मूवी मिलेगा, Username: Rkfileautobot, File: info.py
+Bot token: 7309171232:AAFsg5M__8cSZR_thnuLYRK5RWH-fXX7boU, Name: Moviebot, Username: Teldubmoviebot, File: info.py
+Bot token: 6778456107:AAFzQv4YeaBrc7gFbtSOGbxGivZh1PZEvMQ, Name: Liza bot, Username: Liza_moviesender_bot, File: info.py
+Bot token: 5916043658:AAF9atv0ZRxW7HLKo7c-std_cJFAh-UXo6w, Name: Neha 2.0, Username: Ironautofilter_bot, File: info.py
+Bot token: 6321989858:AAFg2XqoQhURhq30E6e8h-5eww4kjFBtDig, Name: MovieVilla™ Premium, Username: MvM_Premium_Bot, File: info.py
+Bot token: 6530686749:AAGBx7X3K1hRZXu4mG6BKgzLnNPF_8-Pnh4, Name: 𝐀𝐕 𝐈𝐦𝐝𝐛𝐅𝐢𝐥𝐞𝐬 𝐁𝐨𝐭, Username: Movie_000_bot, File: info.py
+Bot token: 7464514161:AAHX4BWJPpbP2uU2Tql_QNh9wnCnjnDh40g, Name: Team MWTel, Username: MWtel_robot, File: info.py
+Bot token: 7359138434:AAFEvfQB-8W_7REObLCQ9zzOWI49uxxkAtQ, Name: TeamXowner, Username: TeamXownerBot, File: info.py
+Bot token: 7317600043:AAGea96C0OYPxRGwaZsPA56eJyfJM3uaN7o, Name: Movies Search Bot, Username: Movies_filterrrbot, File: info.py
+Bot token: 7367144056:AAHpyL9vqejmM8FoYXYo-DninX30t0jI0yo, Name: iPopkorn Alpha, Username: ipopkorn_rebot, File: info.py
+Bot token: 5257015155:AAGnkhrWMGFrKDRlsOBMm4zc9bGttqJD2Ug, Name: ࿐AᏁjᎪᏞᎥ SᎥᏁᎶh᭄ꦿ᭄ꦿ, Username: Sweetproviderbot, File: info.py
+Bot token: 7251699217:AAHvxutNsQ5G7OdAnVl1k_-n731Qp8_68UQ, Name: NJMovies, Username: NJ_MoviesBot, File: info.py
+Bot token: 7308119523:AAEMgRrJYJz-DCgyjLT23RIfdmqSwli7f68, Name: Support_170, Username: Sree170_bot, File: info.py
+Bot token: 7386593278:AAHEjLYqgPMCVYR-ed9Se4Yi5UZXCSnZtJ4, Name: Auto Filter Bot, Username: SP_Filter_bot, File: info.py
+Bot token: 7169474270:AAGEIn9mF2dsd0hHoiJtsj3KzoFjBLCisxM, Name: Movies Request Bot, Username: Movies_Request_Ask_Bot, File: info.py
+Bot token: 5527818445:AAE7TLprBfyUuQvYZsaOesQ0F-9C2sl2I80, Name: DedSeC, Username: deds3c_bot, File: info.py
+Bot token: 7077611383:AAGUgA1efZJqYzULZOVOC15qAr0GAzoqHvU, Name: Auto Filter Bot g, Username: SK_AutoFilter_Bot, File: info.py
