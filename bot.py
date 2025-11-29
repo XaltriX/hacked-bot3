@@ -64,7 +64,7 @@ CUSTOM_REPLY_TEXT = """
 CUSTOM_REPLY_BUTTONS = InlineKeyboardMarkup(inline_keyboard=[
     # Channels Section
     [InlineKeyboardButton(text="🎬 Insta Reels Viral Videos", url="https://t.me/+5-VqLSW75i44ZGU0")],
-    [InlineKeyboardButton(text="💎 Premium Leaks & Desi MMS Free", url="https://t.me/+XA8od28NXzQxNTJk")],
+    [InlineKeyboardButton(text="💎 Premium Leaks & Desi MMS Free", url="https://t.me/+-e8UDgh31Iw5MzZl")],
     [InlineKeyboardButton(text="📱 Daily Dose of Free MMS", url="https://t.me/+G0che48_Vxg4MGZk")],
     [InlineKeyboardButton(text="🌑 Dark W3b Videos", url="https://t.me/+xleTT84J9Kk3YzI0")],
     [InlineKeyboardButton(text="🎥 Movie Request Group", url="https://t.me/MOVIE_REQUESTX")],
