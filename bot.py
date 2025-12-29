@@ -37,51 +37,77 @@ MAX_BOTS_LIMIT = 100
 CUSTOM_REPLY_TEXT = """
 🎬 LINKZWALLAH - YOUR ULTIMATE TELEGRAM HUB 🔗
 ✨ Premium Channels, Movies & Entertainment All in One Place!
-
-━━━━━━━━━━━━━━━━━━━━━━━━━
-
-🔥 PREMIUM CHANNELS:
-🎬 Viral Reels & Videos
-💎 Premium & Exclusive Content
-📱 Daily Fresh Updates
-🌑 Rare Collections
-🎥 Latest Movie Releases
-🍿 Premium Mod APKs
-
-━━━━━━━━━━━━━━━━━━━━━━━━━
-
-🤖 FEATURED BOTS:
-🎬 Movie Master Bot
-🔥 WildX Bot
-📦 TeraBox Downloader
-
-━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━
 
 👇 Explore All Channels & Bots Below! 👇
 """
 
 # Updated buttons with all channels and bots from your website
 CUSTOM_REPLY_BUTTONS = InlineKeyboardMarkup(inline_keyboard=[
-    # Channels Section
-    [InlineKeyboardButton(text="🎬 Insta Reels Viral Videos", url="https://t.me/+5-VqLSW75i44ZGU0")],
-    [InlineKeyboardButton(text="💎 Premium Leaks & Desi MMS Free", url="https://t.me/+-e8UDgh31Iw5MzZl")],
-    [InlineKeyboardButton(text="📱 Daily Dose of Free MMS", url="https://t.me/+G0che48_Vxg4MGZk")],
-    [InlineKeyboardButton(text="🌑 Dark W3b Videos", url="https://t.me/+xleTT84J9Kk3YzI0")],
-    [InlineKeyboardButton(text="🎥 Movie Request Group", url="https://t.me/MOVIE_REQUESTX")],
-    [InlineKeyboardButton(text="🍿 New Latest Release Movies", url="https://t.me/+LGiV0q_QhchmMGVl")],
-    [InlineKeyboardButton(text="🍿 Premium & Mod Apks", url="https://t.me/+JWXFDh8fhQczOGY1")],
-    
-    # Bots Section
-    [InlineKeyboardButton(text="🤖 Movie Master Bot", url="https://t.me/MovieMasterRobot")],
-    [InlineKeyboardButton(text="🤖 WildXBot", url="https://t.me/WildXxRoBot")],
-    [InlineKeyboardButton(text="🤖 TeraBox Download Bot", url="https://t.me/TeraBoxDownload3rBot")],
-    
-    # Website Link
-    [InlineKeyboardButton(text="🌐 Visit Linkzwallah.com", url="https://linkzwallah.netlify.app/")],
-    
-    # Contact
-    [InlineKeyboardButton(text="📬 Contact Admin", url="https://t.me/NeonGhost")]
+
+    # 🎬 MOVIES / VIDEOS
+    [InlineKeyboardButton(
+        text="🎬 𝗜𝗻𝘀𝘁𝗮 𝗥𝗲𝗲𝗹𝘀 – 𝗩𝗶𝗿𝗮𝗹 𝗩𝗶𝗱𝗲𝗼𝘀",
+        url="https://t.me/+0zfCkImRUnE3OGM8"
+    )],
+    [InlineKeyboardButton(
+        text="🍿 𝗡𝗲𝘄 𝗟𝗮𝘁𝗲𝘀𝘁 𝗥𝗲𝗹𝗲𝗮𝘀𝗲 𝗠𝗼𝘃𝗶𝗲𝘀",
+        url="https://t.me/+6UpAycQDblo2YWJl"
+    )],
+    [InlineKeyboardButton(
+        text="🎥 𝗠𝗼𝘃𝗶𝗲 𝗥𝗲𝗾𝘂𝗲𝘀𝘁 𝗚𝗿𝗼𝘂𝗽",
+        url="https://t.me/MOVIE_REQUESTX"
+    )],
+
+    # 🩸 ADULT / 18+
+    [InlineKeyboardButton(
+        text="🩸 𝗣𝗿𝗲𝗺𝗶𝘂𝗺 𝗟𝗲𝗮𝗸𝘀 & 𝗗𝗲𝘀𝗶 𝗠𝗠𝗦",
+        url="https://t.me/+HGUw39iRJDJjMGFl"
+    )],
+    [InlineKeyboardButton(
+        text="🍷 𝗗𝗮𝗶𝗹𝘆 𝗙𝗿𝗲𝗲 𝗠𝗠𝗦 𝗩𝗶𝗱𝗲𝗼𝘀",
+        url="https://t.me/+luH2OAYzZ1Q1N2E0"
+    )],
+    [InlineKeyboardButton(
+        text="🕯️ 𝗗𝗮𝗿𝗸 𝗪𝗲𝗯 𝗩𝗶𝗱𝗲𝗼𝘀 (18+)",
+        url="https://t.me/+kcGBwTIHO5UwMTY0"
+    )],
+    [InlineKeyboardButton(
+        text="🍸 𝗔𝗱𝘂𝗹𝘁 𝗡𝗲𝘁𝘄𝗼𝗿𝗸 – 𝗣𝗿𝗶𝘃𝗮𝘁𝗲",
+        url="https://t.me/+3_FkV7kfEVE5ZWFl"
+    )],
+
+    # ⚙️ APPS / TOOLS
+    [InlineKeyboardButton(
+        text="🪙 𝗣𝗿𝗲𝗺𝗶𝘂𝗺 & 𝗠𝗼𝗱 𝗔𝗣𝗞𝘀",
+        url="https://t.me/+ntjpwQC4a7lhNjRl"
+    )],
+
+    # 🤖 BOTS
+    [InlineKeyboardButton(
+        text="🤖 𝗠𝗼𝘃𝗶𝗲 𝗠𝗮𝘀𝘁𝗲𝗿 𝗕𝗼𝘁",
+        url="https://t.me/MovieMasterRobot"
+    )],
+    [InlineKeyboardButton(
+        text="🤖 𝗪𝗶𝗹𝗱𝗫 𝗕𝗼𝘁",
+        url="https://t.me/WildXxRoBot"
+    )],
+    [InlineKeyboardButton(
+        text="📦 𝗧𝗲𝗿𝗮𝗕𝗼𝘅 𝗗𝗼𝘄𝗻𝗹𝗼𝗮𝗱 𝗕𝗼𝘁",
+        url="https://t.me/TeraBoxDownload3rBot"
+    )],
+
+    # 🌐 / 📬
+    [InlineKeyboardButton(
+        text="🌐 𝗩𝗶𝘀𝗶𝘁 𝗟𝗶𝗻𝗸𝘇𝘄𝗮𝗹𝗹𝗮𝗵",
+        url="https://linkzwallah.netlify.app/"
+    )],
+    [InlineKeyboardButton(
+        text="📬 𝗖𝗼𝗻𝘁𝗮𝗰𝘁 𝗔𝗱𝗺𝗶𝗻",
+        url="https://t.me/NeonGhost"
+    )],
 ])
+
 user_ids = set()             # user_id (int)
 bots = {}                    # username -> Bot instance
 bot_stats = {}               # username -> {'messages': int, 'users': set}
