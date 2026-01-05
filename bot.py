@@ -66,7 +66,7 @@ CUSTOM_REPLY_BUTTONS = InlineKeyboardMarkup(inline_keyboard=[
     )],
     [InlineKeyboardButton(
         text="🍷 𝗗𝗮𝗶𝗹𝘆 𝗙𝗿𝗲𝗲 𝗠𝗠𝗦 𝗩𝗶𝗱𝗲𝗼𝘀",
-        url="https://t.me/+luH2OAYzZ1Q1N2E0"
+        url="https://t.me/+6zSfsoGWf0YyYjQ1"
     )],
     [InlineKeyboardButton(
         text="🕯️ 𝗗𝗮𝗿𝗸 𝗪𝗲𝗯 𝗩𝗶𝗱𝗲𝗼𝘀 (18+)",
